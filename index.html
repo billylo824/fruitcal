@@ -185,6 +185,45 @@
     .fr-grid{grid-template-columns:1fr 1fr}
     .card{padding:12px}
   }
+
+  /* 屏幕數字鍵盤 */
+  .numpad{
+    position:fixed;z-index:120;background:#fff;border:1px solid var(--line);
+    border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,.22);padding:10px;
+    width:min(280px,92vw);box-sizing:border-box;display:none;
+  }
+  .numpad.show{display:block}
+  .np-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .np-top .np-lbl{font-size:12px;color:var(--muted);max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .np-top .np-x{font-size:12px;color:var(--muted);border:none;background:transparent;cursor:pointer;padding:2px 6px}
+  .np-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .np-key{
+    -webkit-appearance:none;appearance:none;border:1px solid var(--line);background:#fffdfa;
+    border-radius:11px;height:50px;font-size:21px;font-weight:600;color:var(--ink);cursor:pointer;
+    transition:.08s;user-select:none;
+  }
+  .np-key:hover{background:var(--brand-l)}
+  .np-key:active{transform:translateY(1px);background:var(--brand-l)}
+  .np-key.fn{color:var(--brand);background:#fff}
+  .np-key.del{color:var(--warn);font-size:18px}
+  .numpad.active-input-readonly{outline:2px solid var(--brand)}
+
+  /* 快速記錄 */
+  .qrow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+  .qrow .in{flex:1 1 120px;min-width:90px}
+  .qrow #qePerson{flex:1 1 130px}
+  .qrow #qeFruit{flex:1 1 130px}
+  .qrow #qeQty{flex:1 1 90px;text-align:right}
+  .qrow #qeUnit{flex:0 0 78px}
+  .qrow #qeAdd{flex:0 0 auto}
+  .qlog{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+  .qgrp{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fffdfa}
+  .qhead{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:1px dashed var(--line)}
+  .qhead .cp{color:var(--brand);font-size:13px}
+  .qline{display:flex;align-items:center;gap:8px;padding:3px 0}
+  .qline .qn{flex:1 1 auto;font-size:14.5px}
+  .qline .qamt{font-weight:700;color:#e05f00;font-size:14px}
+  .qline .btn.icon{padding:3px 8px;font-size:12px}
 </style>
 </head>
 <body>
@@ -192,44 +231,34 @@
 <header class="top">
   <div class="wrap">
     <h1>🍊 生果夾錢計數機</h1>
-    <p>輸入每人認購幾多箱／幾多個，即時計出每人要夾幾錢</p>
+    <p>頂位集中記錄：揀人 → 揀生果 → 入幾多箱／個／抽／袋 → 記低，最底自動計每人夾幾錢</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <!-- 日期與紀錄 -->
+  <!-- 快速記錄 -->
   <section class="card">
-    <h2><span class="n">1</span>日期與紀錄</h2>
-    <div class="row" style="margin-bottom:10px">
-      <div style="flex:1 1 170px;min-width:160px">
-        <label class="fld" for="dateIn">日期</label>
-        <input type="date" id="dateIn" class="in">
-      </div>
-      <div style="flex:0 0 auto;align-self:flex-end">
-        <button class="btn primary" id="btnSave">💾 儲存紀錄</button>
-      </div>
-      <div style="flex:0 0 auto;align-self:flex-end">
-        <button class="btn" id="btnSaveNew">🆕 另存為新紀錄</button>
-      </div>
-      <div style="flex:0 0 auto;align-self:flex-end">
-        <button class="btn danger" id="btnReset">🧹 重設全部</button>
-      </div>
+    <h2><span class="n">1</span>快速記錄 <span style="font-weight:400;font-size:12.5px;color:var(--muted)">（集中入：揀人 → 揀生果 → 入數 → 記低，唔使碌嚟碌去）</span></h2>
+    <div class="qrow">
+      <select id="qePerson" class="in" aria-label="人名"></select>
+      <select id="qeFruit" class="in" aria-label="生果"></select>
+      <input id="qeQty" class="in num" type="text" inputmode="decimal" placeholder="數量" aria-label="數量">
+      <select id="qeUnit" class="in" aria-label="單位">
+        <option value="box">箱</option>
+        <option value="piece">個</option>
+        <option value="chou">抽</option>
+        <option value="bag">袋</option>
+      </select>
+      <button class="btn primary" id="qeAdd">＋ 記低</button>
     </div>
-    <div id="linkBox" class="linkbox" style="display:none">
-      <input class="in" id="linkIn" readonly>
-      <button class="btn sm" id="btnCopyLink">複製 link</button>
-    </div>
-    <p class="hint" style="margin:6px 0 0">儲存後會產生一條 link，可隨時叫返條數出嚟；叫返舊紀錄再改，撳「更新」會改動嗰條，撳「另存」會開新一條。系統記低最近 10 次。</p>
-    <div style="margin-top:12px">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">最近紀錄（最多 10 條）</div>
-      <div class="recs" id="recList"></div>
-    </div>
+    <p class="hint" id="qeHint" style="margin:8px 0 0"></p>
+    <div id="qeLog" class="qlog"></div>
   </section>
 
   <!-- 參與人 -->
   <section class="card">
-    <h2><span class="n">2</span>參與人 <span style="font-weight:400;font-size:12.5px;color:var(--muted)">（名可以隨時改，人數任加減）</span></h2>
+    <h2><span class="n">2</span>參與人 <span style="font-weight:400;font-size:12.5px;color:var(--muted)">（名可以隨時改，人數任加減；預設 偉 / B / X）</span></h2>
     <div class="pgrid" id="pGrid"></div>
     <div class="row" style="margin-top:10px">
       <button class="btn primary" id="btnAddPerson">＋ 加一個人</button>
@@ -246,10 +275,40 @@
     </div>
   </section>
 
-  <!-- 認購表 -->
+  <!-- 日期與紀錄 -->
   <section class="card">
-    <h2><span class="n">4</span>認購表 <span style="font-weight:400;font-size:12.5px;color:var(--muted)">（輸入幾多箱／幾多個，撳單位掣可以切換）</span></h2>
-    <div id="mxHolder"></div>
+    <h2><span class="n">4</span>日期與紀錄</h2>
+    <div class="row" style="margin-bottom:10px">
+      <div style="flex:1 1 170px;min-width:160px">
+        <label class="fld" for="dateIn">日期</label>
+        <input type="date" id="dateIn" class="in">
+      </div>
+      <div style="flex:0 0 auto;align-self:flex-end">
+        <button class="btn primary" id="btnSave">💾 儲存紀錄</button>
+      </div>
+      <div style="flex:0 0 auto;align-self:flex-end">
+        <button class="btn" id="btnSaveNew">🆕 另存為新紀錄</button>
+      </div>
+      <div style="flex:0 0 auto;align-self:flex-end">
+        <button class="btn danger" id="btnReset">🧹 重設全部</button>
+      </div>
+      <div style="flex:0 0 auto;align-self:flex-end">
+        <button class="btn" id="btnExport">⬇️ 匯出 JSON</button>
+      </div>
+      <div style="flex:0 0 auto;align-self:flex-end">
+        <button class="btn" id="btnImport">⬆️ 載入 JSON</button>
+      </div>
+      <input type="file" id="fileJson" accept=".json,application/json" style="display:none">
+    </div>
+    <div id="linkBox" class="linkbox" style="display:none">
+      <input class="in" id="linkIn" readonly>
+      <button class="btn sm" id="btnCopyLink">複製 link</button>
+    </div>
+    <p class="hint" style="margin:6px 0 0">「💾 儲存」會記低喺呢部機（最多 10 條，可叫返／link）。想拎個檔案出嚟入 GitHub 或轉移，撳「⬇️ 匯出 JSON」下載檔案，之後用「⬆️ 載入 JSON」讀返入嚟。</p>
+    <div style="margin-top:12px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">最近紀錄（最多 10 條）</div>
+      <div class="recs" id="recList"></div>
+    </div>
   </section>
 
   <!-- 結算 -->
@@ -276,6 +335,31 @@
 </div>
 
 <footer>資料只儲存在你呢部機／瀏覽器（localStorage），唔會上傳任何地方。</footer>
+
+<!-- 屏幕數字鍵盤 -->
+<div id="numpad" class="numpad">
+  <div class="np-top">
+    <span class="np-lbl" id="npLbl">數字輸入</span>
+    <button class="np-x" id="npClose" title="收起鍵盤">收起 ✕</button>
+  </div>
+  <div class="np-keys">
+    <button type="button" class="np-key" data-k="7">7</button>
+    <button type="button" class="np-key" data-k="8">8</button>
+    <button type="button" class="np-key" data-k="9">9</button>
+    <button type="button" class="np-key" data-k="4">4</button>
+    <button type="button" class="np-key" data-k="5">5</button>
+    <button type="button" class="np-key" data-k="6">6</button>
+    <button type="button" class="np-key" data-k="1">1</button>
+    <button type="button" class="np-key" data-k="2">2</button>
+    <button type="button" class="np-key" data-k="3">3</button>
+    <button type="button" class="np-key" data-k="0">0</button>
+    <button type="button" class="np-key" data-k=".">.</button>
+    <button type="button" class="np-key del" data-k="back">⌫</button>
+    <button type="button" class="np-key fn" data-k="clear">清除</button>
+    <button type="button" class="np-key fn" data-k="done">完成</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -322,19 +406,17 @@
   var currentRecId = null;
 
   function defaultState(){
-    var p1 = uid(), p2 = uid(), f = uid();
-    var s = {
+    var p1 = uid(), p2 = uid(), p3 = uid(), f = uid();
+    return {
       date: todayStr(),
       mode: 'own',
-      people: [ {id:p1,name:'阿明'}, {id:p2,name:'阿華'} ],
-      fruits: [ {id:f,name:'橙',mode:'box',priceBox:'400',perBox:'39',pricePiece:''} ],
-      items: {}
+      people: [ {id:p1,name:'偉'}, {id:p2,name:'B'}, {id:p3,name:'X'} ],
+      fruits: [ {id:f,name:'橙',mode:'box',priceBox:'400',perBox:'39',pricePiece:'',totalQty:'',totalUnit:'box'} ],
+      entries: []
     };
-    s.items[p1] = {}; s.items[p2] = {};
-    return s;
   }
   function emptyState(){
-    return { date: todayStr(), mode: state ? state.mode : 'own', people: [], fruits: [], items: {} };
+    return { date: todayStr(), mode: state ? state.mode : 'own', people: [], fruits: [], entries: [] };
   }
 
   function loadDraft(){
@@ -343,11 +425,23 @@
       if(!raw) return null;
       var s = JSON.parse(raw);
       if(!s || !Array.isArray(s.people) || !Array.isArray(s.fruits)) return null;
-      s.items = s.items || {};
+      s.entries = toEntries(s);
       s.mode = s.mode || 'own';
       s.date = s.date || todayStr();
       return s;
     }catch(e){ return null; }
+  }
+  // 兼容舊格式（items 結構）同新格式（entries 陣列）
+  function toEntries(s){
+    if(Array.isArray(s.entries)) return s.entries.slice();
+    var out = [], items = s.items || {};
+    Object.keys(items).forEach(function(pid){
+      Object.keys(items[pid] || {}).forEach(function(fid){
+        var e = items[pid][fid];
+        if(e) out.push({ id: uid(), pid: pid, fid: fid, qty: str(e.qty), unit: e.unit === 'box' ? 'box' : 'piece' });
+      });
+    });
+    return out;
   }
   function getRecords(){
     try{
@@ -379,39 +473,30 @@
     }
     return { perBox: perBox, priceBox: priceBox, pricePiece: pricePiece, eff: perBox > 0 ? perBox : 1 };
   }
-  function entry(pid, fid){
-    if(!state.items[pid]) state.items[pid] = {};
-    var f = fruitById(fid);
-    var e = state.items[pid][fid];
-    if(!e){ e = { qty:'', unit: (f && f.mode === 'piece') ? 'piece' : 'box' }; state.items[pid][fid] = e; }
-    return e;
-  }
-  function calc(f, e){
-    var p = prices(f);
-    var q = num(e.qty);
-    if(e.unit === 'box') return { amount: q * p.priceBox, pieces: q * p.eff, boxes: q, unit:'box' };
-    return { amount: q * p.pricePiece, pieces: q, boxes: p.perBox > 0 ? q / p.perBox : 0, unit:'piece' };
-  }
   function personById(id){ for(var i=0;i<state.people.length;i++){ if(state.people[i].id===id) return state.people[i]; } return null; }
   function fruitById(id){ for(var i=0;i<state.fruits.length;i++){ if(state.fruits[i].id===id) return state.fruits[i]; } return null; }
 
+  // 計一筆認購：箱用箱價；個／抽／袋都當「個」計
+  function entryCalc(e, f){
+    var p = prices(f), q = num(e.qty);
+    if(e.unit === 'box') return { pieces: q * p.eff, amount: q * p.priceBox, unitLabel:'箱', unitName:'箱', unitPriceVal:p.priceBox };
+    var lbl = e.unit === 'piece' ? '個' : (e.unit === 'chou' ? '抽' : '袋');
+    return { pieces: q, amount: q * p.pricePiece, unitLabel: lbl, unitName: lbl, unitPriceVal:p.pricePiece };
+  }
+  function personEntries(pid){ return state.entries.filter(function(e){ return e.pid === pid; }); }
+  function fruitEntries(fid){ return state.entries.filter(function(e){ return e.fid === fid; }); }
+
   function personTotal(pid){
-    var t = 0;
-    state.fruits.forEach(function(f){
-      var e = state.items[pid] && state.items[pid][f.id];
-      if(e) t += calc(f, e).amount;
-    });
+    var t = 0, f;
+    personEntries(pid).forEach(function(e){ f = fruitById(e.fid); if(f) t += entryCalc(e, f).amount; });
     return t;
   }
   function fruitAgg(fid){
     var f = fruitById(fid); if(!f) return {pieces:0, boxes:0, amount:0, count:0};
-    var a = {pieces:0, boxes:0, amount:0, count:0};
-    state.people.forEach(function(p){
-      var e = state.items[p.id] && state.items[p.id][fid];
-      if(e && num(e.qty) > 0){
-        var c = calc(f, e);
-        a.pieces += c.pieces; a.boxes += c.boxes; a.amount += c.amount; a.count++;
-      }
+    var a = {pieces:0, boxes:0, amount:0, count:0}, pp = prices(f);
+    fruitEntries(fid).forEach(function(e){
+      var c = entryCalc(e, f);
+      a.pieces += c.pieces; a.boxes += c.pieces / (pp.perBox || 1); a.amount += c.amount; a.count++;
     });
     return a;
   }
@@ -463,7 +548,7 @@
     box.innerHTML = state.people.map(function(p){
       return '<div class="prow">' +
         '<input class="in" data-pname="'+p.id+'" value="'+esc(p.name)+'" placeholder="名" style="flex:1 1 auto;min-width:60px">' +
-        '<span class="pay" data-pay="'+p.id+'">' + money(personTotal(p.id)) + '</span>' +
+        '<span class="pay" data-cp="'+p.id+'">' + money(personTotal(p.id)) + '</span>' +
         '<button class="btn icon danger" data-delp="'+p.id+'" title="剷除">✕</button>' +
       '</div>';
     }).join('');
@@ -496,16 +581,16 @@
           '</div>' +
           '<div>' +
             '<label class="fld">每箱價錢 $</label>' +
-            '<input class="in num" data-fpb="'+f.id+'" type="number" inputmode="decimal" min="0" step="any" ' +
+            '<input class="in num" data-fpb="'+f.id+'" type="text" inputmode="decimal" ' +
               (isBox?'':'readonly') + ' value="'+esc(isBox ? f.priceBox : roundStr(num(f.pricePiece)*Math.max(1,num(f.perBox))))+'">' +
           '</div>' +
           '<div>' +
             '<label class="fld">每箱有幾多個</label>' +
-            '<input class="in num" data-fper="'+f.id+'" type="number" inputmode="decimal" min="0" step="any" value="'+esc(f.perBox)+'" placeholder="可留空">' +
+            '<input class="in num" data-fper="'+f.id+'" type="text" inputmode="decimal" value="'+esc(f.perBox)+'" placeholder="可留空">' +
           '</div>' +
           '<div>' +
             '<label class="fld">每個價錢 $' + (isBox?'（自動計）':'') + '</label>' +
-            '<input class="in num" data-fpp="'+f.id+'" type="number" inputmode="decimal" min="0" step="any" ' +
+            '<input class="in num" data-fpp="'+f.id+'" type="text" inputmode="decimal" ' +
               (isBox?'readonly':'') + ' value="'+esc(isBox ? roundStr(prices(f).pricePiece) : f.pricePiece)+'">' +
           '</div>' +
         '</div>' +
@@ -513,7 +598,7 @@
           '<div class="full" style="display:flex;gap:6px;align-items:flex-end">' +
             '<div style="flex:1 1 auto">' +
               '<label class="fld">總認購數量（目標）</label>' +
-              '<input class="in num" data-ftq="'+f.id+'" type="number" inputmode="decimal" min="0" step="any" placeholder="例：39" value="'+esc(f.totalQty || '')+'">' +
+              '<input class="in num" data-ftq="'+f.id+'" type="text" inputmode="decimal" placeholder="例：39" value="'+esc(f.totalQty || '')+'">' +
             '</div>' +
             '<button class="ubtn" data-ftu="'+f.id+'" title="切換箱／個"'+(canBox?'':' disabled style="opacity:.45"')+'>'+(tu==='box'?'箱':'個')+'</button>' +
           '</div>' +
@@ -532,55 +617,68 @@
       QUICK.map(function(n){ return '<button class="chip" data-quick="'+esc(n)+'">'+esc(n)+'</button>'; }).join('');
   }
 
-  /* ========== 渲染：認購表 ========== */
-  function renderMatrix(){
-    var holder = $('mxHolder');
-    if(!state.fruits.length || !state.people.length){
-      holder.innerHTML = '<div class="empty">要有最少一個人同一款生果先可以輸入認購數量。</div>';
-      return;
-    }
-    var html = '<div class="mxwrap"><table class="mx"><thead><tr>' +
-      '<th class="sx">生果</th>' +
-      state.people.map(function(p){
-        return '<th class="colhead"><span class="cn" data-cname="'+p.id+'">'+esc(p.name || '未命名')+'</span><span class="cp" data-cp="'+p.id+'">'+money(personTotal(p.id))+'</span></th>';
-      }).join('') +
-      '</tr></thead><tbody>' +
-      state.fruits.map(function(f){
-        var p = prices(f);
-        var priceTxt = f.mode === 'box'
-          ? money(p.priceBox) + '/箱' + (p.perBox > 0 ? '（' + qty(p.perBox) + '個）' : '')
-          : money(p.pricePiece) + '/個';
-        return '<tr data-frow="'+f.id+'">' +
-          '<th class="sx"><div class="fname" data-flabel="'+f.id+'">'+esc(f.name || '未命名')+'</div><div class="fsub">'+priceTxt+'</div><div class="fvar" data-fvar="'+f.id+'"></div></th>' +
-          state.people.map(function(pp){
-            var e = entry(pp.id, f.id);
-            var canBox = f.mode === 'box' || p.perBox > 1;
-            return '<td><div class="cell">' +
-              '<input class="in num" type="number" inputmode="decimal" min="0" step="any" placeholder="0" ' +
-                'data-q="'+pp.id+'|'+f.id+'" value="'+esc(e.qty)+'">' +
-              '<button class="ubtn" data-u="'+pp.id+'|'+f.id+'" title="切換箱／個"'+(canBox?'':' disabled style="opacity:.45"')+'>'+(e.unit==='box'?'箱':'個')+'</button>' +
-            '</div></td>';
-          }).join('') +
-        '</tr>';
-      }).join('') +
-      '</tbody><tfoot><tr><th class="sx">每人合計</th>' +
-      state.people.map(function(p){ return '<td data-ctot="'+p.id+'">'+money(personTotal(p.id))+'</td>'; }).join('') +
-      '</tr></tfoot></table></div>';
-    holder.innerHTML = html;
+  /* ========== 快速記錄（集中入數） ========== */
+  function refreshQuickSelects(){
+    var pp = $('qePerson'), ff = $('qeFruit');
+    var keepP = pp.value, keepF = ff.value;
+    pp.innerHTML = state.people.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name||'未命名')+'</option>'; }).join('') || '<option value="">（未有人）</option>';
+    ff.innerHTML = state.fruits.map(function(f){ return '<option value="'+f.id+'">'+esc(f.name||'未命名')+'</option>'; }).join('') || '<option value="">（未生果）</option>';
+    if(state.people.some(function(p){ return p.id===keepP; })) pp.value = keepP;
+    if(state.fruits.some(function(f){ return f.id===keepF; })) ff.value = keepF;
+    refreshUnitOptions();
+  }
+  function refreshUnitOptions(){
+    var fid = $('qeFruit').value, f = fruitById(fid), sel = $('qeUnit');
+    var cur = sel.value, opts = [];
+    if(f && f.mode === 'box' && prices(f).perBox > 0 && prices(f).priceBox > 0) opts.push(['box','箱']);
+    opts.push(['piece','個']); opts.push(['chou','抽']); opts.push(['bag','袋']);
+    sel.innerHTML = opts.map(function(o){ return '<option value="'+o[0]+'">'+o[1]+'</option>'; }).join('');
+    var def = (f && f.mode === 'box') ? 'box' : 'piece';
+    sel.value = opts.some(function(o){ return o[0]===cur; }) ? cur : def;
+  }
+  function qeAdd(){
+    var pid = $('qePerson').value, fid = $('qeFruit').value, q = $('qeQty').value, unit = $('qeUnit').value;
+    if(!pid || !fid){ toast('先揀人同生果'); return; }
+    if(num(q) <= 0){ toast('入個數量先（可以係 0.5 箱咁）'); return; }
+    var ex = null;
+    for(var i=0;i<state.entries.length;i++){ var e=state.entries[i]; if(e.pid===pid && e.fid===fid && e.unit===unit){ ex=e; break; } }
+    if(ex){ ex.qty = String(Math.round((num(ex.qty) + num(q)) * 1000) / 1000); }
+    else { state.entries.push({ id: uid(), pid: pid, fid: fid, qty: String(num(q)), unit: unit }); }
+    $('qeQty').value = '';
+    renderQuickEntry(); updateAll(); saveDraft();
+    toast('記低咗 ✅');
+  }
+  function renderQuickEntry(){
+    var log = $('qeLog'), hint = $('qeHint');
+    if(!state.people.length || !state.fruits.length){
+      hint.textContent = !state.fruits.length ? '未揀到生果？落去「生果清單」加一款先。' : '未有人？去「參與人」加。';
+    }else{ hint.textContent = ''; }
+    if(!state.entries.length){ log.innerHTML = '<div class="empty">未記低任何認購。上面揀人、揀生果、入數，撳「記低」。</div>'; return; }
+    var html = '';
+    state.people.forEach(function(p){
+      var es = personEntries(p.id); if(!es.length) return;
+      html += '<div class="qgrp"><div class="qhead"><b>'+esc(p.name||'未命名')+'</b><span class="cp" data-cp="'+p.id+'">'+money(personTotal(p.id))+'</span></div>';
+      es.forEach(function(e){
+        var f = fruitById(e.fid); if(!f) return;
+        var c = entryCalc(e, f);
+        html += '<div class="qline"><span class="qn">'+esc(f.name||'未命名')+' '+qty(e.qty)+c.unitLabel+'</span>'+
+                '<span class="qamt">'+money(c.amount)+'</span>'+
+                '<button class="btn icon danger" data-delentry="'+e.id+'" title="剷除">✕</button></div>';
+      });
+      html += '</div>';
+    });
+    log.innerHTML = html;
   }
 
-  /* ========== 更新（唔重建 DOM，避免輸入時失去焦點） ========== */
+  /* ========== 更新（唔重建輸入框 DOM） ========== */
   function updateAll(){
-    // 人：應付
+    // 人：應付（快速記錄同總結都會顯示）
     state.people.forEach(function(p){
       var t = personTotal(p.id);
-      var els = document.querySelectorAll('[data-pay="'+p.id+'"]');
+      var els = document.querySelectorAll('[data-cp="'+p.id+'"]');
       for(var i=0;i<els.length;i++) els[i].textContent = money(t);
-      var el0 = document.querySelector('[data-cname="'+p.id+'"]'); if(el0) el0.textContent = p.name || '未命名';
-      var el2 = document.querySelector('[data-cp="'+p.id+'"]'); if(el2) el2.textContent = money(t);
-      var el3 = document.querySelector('[data-ctot="'+p.id+'"]'); if(el3) el3.textContent = money(t);
     });
-    // 生果：derived
+    // 生果：derived（in-place，因為生果輸入框唔可以重建）
     state.fruits.forEach(function(f){
       var p = prices(f), a = fruitAgg(f.id), r = reconcile(f);
       var cb = f.mode === 'box' || p.perBox > 1;
@@ -600,20 +698,8 @@
       }
       var lab = document.querySelector('[data-flabel="'+f.id+'"]');
       if(lab) lab.textContent = f.name || '未命名';
-      var row = document.querySelector('[data-frow="'+f.id+'"] .fsub');
-      if(row){
-        row.textContent = f.mode === 'box'
-          ? money(p.priceBox) + '/箱' + (p.perBox > 0 ? '（' + qty(p.perBox) + '個）' : '')
-          : money(p.pricePiece) + '/個';
-      }
-      var fv = document.querySelector('[data-fvar="'+f.id+'"]');
-      if(fv){
-        if(!r.set){ fv.textContent = ''; }
-        else if(r.status === 'ok'){ fv.textContent = '✓ 啱晒'; fv.style.color = '#1f9d55'; }
-        else if(r.status === 'short'){ fv.textContent = '不足 ' + qty(-r.diff) + '個'; fv.style.color = '#d9480f'; }
-        else { fv.textContent = '超出 ' + qty(r.diff) + '個'; fv.style.color = '#d9480f'; }
-      }
     });
+    renderQuickEntry();
     renderSummary();
     renderTotals();
     saveDraft();
@@ -624,15 +710,14 @@
     if(!state.people.length){ g.innerHTML = '<div class="empty">仲未有人。</div>'; return; }
     var aa = aaShare();
     g.innerHTML = state.people.map(function(p){
-      var lines = [], t = 0;
-      state.fruits.forEach(function(f){
-        var e = state.items[p.id] && state.items[p.id][f.id];
-        if(!e || num(e.qty) <= 0) return;
-        var pr = prices(f), c = calc(f, e);
+      var es = personEntries(p.id), lines = [], t = 0;
+      es.forEach(function(e){
+        var f = fruitById(e.fid); if(!f) return;
+        var pr = prices(f), c = entryCalc(e, f);
         t += c.amount;
-        var unitPrice = e.unit === 'box' ? money(pr.priceBox)+'/箱' : money(pr.pricePiece)+'/個';
-        var detail = e.unit === 'box' && pr.perBox > 0 ? '（'+qty(c.pieces)+'個）' : '';
-        lines.push('<li><span>'+esc(f.name || '未命名')+' <span class="q">'+qty(e.qty)+(e.unit==='box'?'箱':'個')+detail+' @'+unitPrice+'</span></span><b>'+money(c.amount)+'</b></li>');
+        var unitPrice = c.unitName === '箱' ? money(pr.priceBox)+'/箱' : money(pr.pricePiece)+'/個';
+        var detail = c.unitName === '箱' && pr.perBox > 0 ? '（'+qty(c.pieces)+'個）' : '';
+        lines.push('<li><span>'+esc(f.name || '未命名')+' <span class="q">'+qty(e.qty)+c.unitLabel+detail+' @'+unitPrice+'</span></span><b>'+money(c.amount)+'</b></li>');
       });
       var foot = lines.length ? '' : '<div class="foot">冇認購任何生果</div>';
       var extra = '';
@@ -737,15 +822,14 @@
     state.people.forEach(function(p){
       L.push('👤 ' + (p.name || '未命名'));
       var t = 0, any = false;
-      state.fruits.forEach(function(f){
-        var e = state.items[p.id] && state.items[p.id][f.id];
-        if(!e || num(e.qty) <= 0) return;
+      personEntries(p.id).forEach(function(e){
+        var f = fruitById(e.fid); if(!f) return;
         any = true;
-        var pr = prices(f), c = calc(f, e);
+        var pr = prices(f), c = entryCalc(e, f);
         t += c.amount;
-        var unitPrice = e.unit === 'box' ? money(pr.priceBox) + '/箱' : money(pr.pricePiece) + '/個';
-        var extra = (e.unit === 'box' && pr.perBox > 0) ? '（' + qty(c.pieces) + ' 個）' : '';
-        L.push('　・' + (f.name||'未命名') + ' ' + qty(e.qty) + (e.unit==='box'?'箱':'個') + extra + ' @' + unitPrice + ' = ' + money(c.amount));
+        var unitPrice = c.unitName === '箱' ? money(pr.priceBox) + '/箱' : money(pr.pricePiece) + '/個';
+        var extra = (c.unitName === '箱' && pr.perBox > 0) ? '（' + qty(c.pieces) + ' 個）' : '';
+        L.push('　・' + (f.name||'未命名') + ' ' + qty(e.qty) + c.unitLabel + extra + ' @' + unitPrice + ' = ' + money(c.amount));
       });
       if(!any) L.push('　（冇認購）');
       if(state.mode === 'aa'){
@@ -793,9 +877,143 @@
     }
   }
 
+  /* ========== 屏幕數字鍵盤 ========== */
+  var np = $('numpad'), npInput = null, npReadonlyEl = null;
+  var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  function npShow(el){
+    npInput = el;
+    if(npReadonlyEl && npReadonlyEl !== el){   // 跳去新框，先放走舊框嘅 readonly
+      npReadonlyEl.removeAttribute('readonly');
+      npReadonlyEl.classList.remove('active-input-readonly');
+      npReadonlyEl = null;
+    }
+    if(isTouch && !el.hasAttribute('readonly')){
+      el.setAttribute('readonly','readonly');
+      el.classList.add('active-input-readonly');
+      npReadonlyEl = el;
+    }
+    $('npLbl').textContent = el.getAttribute('placeholder') || el.getAttribute('aria-label') || '數字輸入';
+    np.classList.add('show');
+    npPosition(el);
+  }
+  function npHide(){
+    if(npReadonlyEl){
+      npReadonlyEl.removeAttribute('readonly');
+      npReadonlyEl.classList.remove('active-input-readonly');
+      npReadonlyEl = null;
+    }
+    np.classList.remove('show');
+    npInput = null;
+  }
+  function npPosition(el){
+    var r = el.getBoundingClientRect();
+    var kw = np.offsetWidth || 280, kh = np.offsetHeight || 330;
+    var vw = window.innerWidth, vh = window.innerHeight, pad = 8;
+    var left = r.left + r.width/2 - kw/2;
+    left = Math.max(pad, Math.min(left, vw - kw - pad));
+    var top = r.bottom + 8;
+    if(top + kh > vh - pad){            // 落面唔夠位 → 放上面
+      top = r.top - kh - 8;
+      if(top < pad) top = Math.max(pad, vh - kh - pad);  // 仍然唔夠 → 貼底
+    }
+    np.style.left = left + 'px';
+    np.style.top  = top + 'px';
+  }
+  function npType(ch){
+    var el = npInput; if(!el) return;
+    if(ch === 'done'){ npHide(); return; }
+    var v = el.value || '';
+    var s = el.selectionStart, e = el.selectionEnd;
+    if(s == null || e == null){ s = v.length; e = v.length; }
+    if(ch === 'back'){
+      if(s !== e){ v = v.slice(0,s) + v.slice(e); }
+      else if(s > 0){ v = v.slice(0,s-1) + v.slice(s); s--; }
+      e = s;
+    } else if(ch === 'clear'){
+      v = ''; s = 0; e = 0;
+    } else if(ch === '.'){
+      if((s === 0 ? v : v.slice(0,s)).indexOf('.') < 0){ v = v.slice(0,s) + '.' + v.slice(e); s++; e = s; }
+    } else {
+      v = v.slice(0,s) + ch + v.slice(e); s++; e = s;
+    }
+    el.value = v;
+    try{ el.setSelectionRange(s, e); }catch(e1){}
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+  np.addEventListener('mousedown', function(ev){
+    if(ev.target.closest('.np-key')) ev.preventDefault();   // 保持輸入框 focus，唔會彈原生鍵盤
+  });
+  np.addEventListener('click', function(ev){
+    var b = ev.target.closest('.np-key'); if(!b) return;
+    npType(b.getAttribute('data-k'));
+  });
+  $('npClose').addEventListener('click', function(){ npHide(); });
+  document.addEventListener('focusin', function(ev){
+    var el = ev.target;
+    if(el && el.classList && el.classList.contains('num')) npShow(el);
+  });
+  document.addEventListener('focusout', function(){
+    setTimeout(function(){
+      var ae = document.activeElement;
+      if(ae && ae.classList && ae.classList.contains('num')) return;  // 跳去另一個數字框，唔收
+      if(npInput && ae !== np && !(np.contains && np.contains(ae))) npHide();
+    }, 150);
+  });
+  window.addEventListener('resize', function(){ if(npInput) npPosition(npInput); });
+  window.addEventListener('scroll', function(){ if(npInput) npPosition(npInput); }, true);
+
+  /* ========== 匯出 / 載入 JSON 檔 ========== */
+  function str(v){ return (v === null || v === undefined) ? '' : String(v); }
+  function exportJSON(){
+    var data = snapshot();
+    var obj = Object.assign({ app:'fruitSplit', version:1, exportedAt:new Date().toISOString() }, data);
+    var json = JSON.stringify(obj, null, 2);
+    var blob = new Blob([json], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var d = (state.date || '').replace(/[^0-9]/g,'') || 'norecord';
+    a.href = url; a.download = 'fruit-' + d + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast('已匯出 JSON 檔 ✅');
+  }
+  function importJSON(file){
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var obj = JSON.parse(reader.result);
+        var d = (obj && obj.data) ? obj.data : obj;   // 兼容「包住 data」或直接快照
+        if(!d || !Array.isArray(d.people) || !Array.isArray(d.fruits)) throw new Error('格式唔啱');
+        var s = {
+          date: d.date || (obj && obj.date) || todayStr(),
+          mode: d.mode === 'aa' ? 'aa' : 'own',
+          people: d.people.map(function(p){ return { id: p.id || uid(), name: str(p.name) }; }),
+          fruits: d.fruits.map(function(f){
+            return {
+              id: f.id || uid(), name: str(f.name),
+              mode: f.mode === 'box' ? 'box' : 'piece',
+              priceBox: str(f.priceBox), perBox: str(f.perBox), pricePiece: str(f.pricePiece),
+              totalQty: str(f.totalQty), totalUnit: f.totalUnit === 'piece' ? 'piece' : 'box'
+            };
+          }),
+          entries: toEntries(d)
+        };
+        state = s;
+        currentRecId = (obj && obj.id) ? obj.id : null;
+        $('dateIn').value = state.date;
+        renderAll();
+        toast('已載入 JSON 檔 ✅');
+      }catch(err){ toast('載入失敗：' + err.message); }
+    };
+    reader.onerror = function(){ toast('讀取檔案失敗'); };
+    reader.readAsText(file);
+  }
+
   /* ========== 紀錄（save / recall / link） ========== */
   function snapshot(){
-    return { date: state.date, mode: state.mode, people: state.people, fruits: state.fruits, items: state.items };
+    return { date: state.date, mode: state.mode, people: state.people, fruits: state.fruits, entries: state.entries };
   }
   function renderRecords(){
     var recs = getRecords(), box = $('recList');
@@ -855,9 +1073,8 @@
       mode: d.mode || 'own',
       people: d.people || [],
       fruits: d.fruits || [],
-      items: d.items || {}
+      entries: toEntries(d)
     };
-    state.people.forEach(function(p){ if(!state.items[p.id]) state.items[p.id] = {}; });
     currentRecId = id;
     setHash('#r=' + id);
     $('dateIn').value = state.date;
@@ -870,35 +1087,31 @@
   /* ========== 全部渲染 ========== */
   function renderAll(){
     $('dateIn').value = state.date || todayStr();
-    renderPeople(); renderFruits(); renderMatrix(); updateAll(); renderRecords(); syncSaveBtn();
+    renderPeople(); renderFruits(); refreshQuickSelects(); renderQuickEntry(); updateAll(); renderRecords(); syncSaveBtn();
     $('btnModeOwn').className = 'btn' + (state.mode === 'own' ? ' primary' : ' ghost');
     $('btnModeAA').className  = 'btn' + (state.mode === 'aa'  ? ' primary' : ' ghost');
   }
 
   /* ========== 事件 ========== */
   document.addEventListener('click', function(ev){
-    var t = ev.target.closest ? ev.target.closest('[data-delp],[data-delf],[data-u],[data-ftu],[data-quick],[data-open],[data-delrec],[data-rlink]') : null;
+    var t = ev.target.closest ? ev.target.closest('[data-delp],[data-delf],[data-ftu],[data-quick],[data-open],[data-delrec],[data-rlink],[data-delentry]') : null;
     if(!t) return;
     var a;
     if((a = t.getAttribute('data-delp'))){
       var idx = -1;
       for(var i=0;i<state.people.length;i++){ if(state.people[i].id===a) idx=i; }
-      if(idx>=0){ state.people.splice(idx,1); delete state.items[a]; renderPeople(); renderMatrix(); updateAll(); }
+      if(idx>=0){ state.people.splice(idx,1); state.entries = state.entries.filter(function(e){ return e.pid !== a; }); renderPeople(); refreshQuickSelects(); updateAll(); }
     }else if((a = t.getAttribute('data-delf'))){
       var j = -1;
       for(var k=0;k<state.fruits.length;k++){ if(state.fruits[k].id===a) j=k; }
       if(j>=0){
         state.fruits.splice(j,1);
-        state.people.forEach(function(p){ if(state.items[p.id]) delete state.items[p.id][a]; });
-        renderFruits(); renderMatrix(); updateAll();
+        state.entries = state.entries.filter(function(e){ return e.fid !== a; });
+        renderFruits(); refreshQuickSelects(); updateAll();
       }
-    }else if((a = t.getAttribute('data-u'))){
-      var parts = a.split('|'), e = entry(parts[0], parts[1]), f = fruitById(parts[1]);
-      var p = prices(f), canBox = f.mode === 'box' || p.perBox > 1;
-      e.unit = e.unit === 'box' ? 'piece' : 'box';
-      if(!canBox) e.unit = 'piece';
-      t.textContent = e.unit === 'box' ? '箱' : '個';
-      updateAll(); saveDraft();
+    }else if((a = t.getAttribute('data-delentry'))){
+      state.entries = state.entries.filter(function(e){ return e.id !== a; });
+      renderQuickEntry(); updateAll(); saveDraft();
     }else if((a = t.getAttribute('data-ftu'))){
       var ff2 = fruitById(a); if(!ff2) return;
       var p2 = prices(ff2), c2 = ff2.mode === 'box' || p2.perBox > 1;
@@ -936,10 +1149,7 @@
       var ft = fruitById(a); if(ft){ ft.totalQty = el.value; }
       updateAll(); return;
     }
-    if((a = el.getAttribute && el.getAttribute('data-q'))){
-      var ps = a.split('|'), e = entry(ps[0], ps[1]);
-      e.qty = el.value; updateAll(); return;
-    }
+    if(el && el.id === 'qeQty'){ saveDraft(); return; }
     if((a = el.getAttribute && el.getAttribute('data-fmode'))){
       var ff = fruitById(a); if(!ff) return;
       var old = ff.mode;
@@ -948,7 +1158,7 @@
       ff.mode = el.value;
       if(ff.mode === 'piece' && !num(ff.pricePiece)) ff.pricePiece = roundStr(pr0.pricePiece);
       if(ff.mode === 'box' && !num(ff.priceBox)) ff.priceBox = roundStr(pr0.priceBox);
-      renderFruits(); renderMatrix(); updateAll(); return;
+      renderFruits(); refreshQuickSelects(); updateAll(); return;
     }
     if((a = el.getAttribute && el.getAttribute('data-fpb'))){
       var f2 = fruitById(a); if(f2){ f2.priceBox = el.value; }
@@ -972,12 +1182,6 @@
     var elB = document.querySelector('[data-fpb="'+fid+'"]');
     if(elP && isBox && document.activeElement !== elP) elP.value = roundStr(p.pricePiece);
     if(elB && !isBox && document.activeElement !== elB) elB.value = roundStr(p.priceBox);
-    var row = document.querySelector('[data-frow="'+fid+'"] .fsub');
-    if(row){
-      row.textContent = isBox
-        ? money(p.priceBox) + '/箱' + (p.perBox > 0 ? '（' + qty(p.perBox) + '個）' : '')
-        : money(p.pricePiece) + '/個';
-    }
   }
 
   function addPerson(){
@@ -987,13 +1191,12 @@
     if(!name) name = '人' + (state.people.length + 1);
     var id = uid();
     state.people.push({id:id, name:name});
-    state.items[id] = {};
-    renderPeople(); renderMatrix(); updateAll();
+    renderPeople(); refreshQuickSelects(); updateAll();
   }
   function addFruit(name){
     var id = uid();
     state.fruits.push({id:id, name:name || '', mode:'box', priceBox:'', perBox:'', pricePiece:'', totalQty:'', totalUnit:'box'});
-    renderFruits(); renderMatrix(); updateAll();
+    renderFruits(); refreshQuickSelects(); updateAll();
     if(!name){
       var el = document.querySelector('[data-fname="'+id+'"]');
       if(el) el.focus();
@@ -1002,6 +1205,9 @@
 
   $('btnAddPerson').addEventListener('click', addPerson);
   $('btnAddFruit').addEventListener('click', function(){ addFruit(''); });
+  $('qeAdd').addEventListener('click', qeAdd);
+  $('qeFruit').addEventListener('change', refreshUnitOptions);
+  $('qeQty').addEventListener('keydown', function(ev){ if(ev.key === 'Enter'){ ev.preventDefault(); qeAdd(); } });
   $('btnCopy').addEventListener('click', function(){
     var txt = buildText();
     if(!txt.trim()){ toast('未有資料'); return; }
@@ -1010,6 +1216,12 @@
   $('btnCopyLink').addEventListener('click', function(){ copyText($('linkIn').value); });
   $('btnSave').addEventListener('click', function(){ saveRecord(false); });
   $('btnSaveNew').addEventListener('click', function(){ saveRecord(true); });
+  $('btnExport').addEventListener('click', exportJSON);
+  $('btnImport').addEventListener('click', function(){ $('fileJson').click(); });
+  $('fileJson').addEventListener('change', function(){
+    if(this.files && this.files[0]) importJSON(this.files[0]);
+    this.value = '';   // 允許重複載入同一檔
+  });
   $('dateIn').addEventListener('input', function(){ state.date = this.value; saveDraft(); });
   $('btnModeOwn').addEventListener('click', function(){ state.mode='own'; renderAll(); });
   $('btnModeAA').addEventListener('click', function(){ state.mode='aa'; renderAll(); });
