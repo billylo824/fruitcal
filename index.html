@@ -298,6 +298,9 @@
       <div style="flex:0 0 auto;align-self:flex-end">
         <button class="btn" id="btnImport">⬆️ 載入 JSON</button>
       </div>
+      <div style="flex:0 0 auto;align-self:flex-end">
+        <button class="btn" id="btnCopy">📋 複製全部資料</button>
+      </div>
       <input type="file" id="fileJson" accept=".json,application/json" style="display:none">
     </div>
     <div id="linkBox" class="linkbox" style="display:none">
@@ -309,27 +312,6 @@
       <div style="font-size:13px;color:var(--muted);margin-bottom:6px">最近紀錄（最多 10 條）</div>
       <div class="recs" id="recList"></div>
     </div>
-  </section>
-
-  <!-- 結算 -->
-  <section class="card">
-    <h2><span class="n">5</span>每人結算</h2>
-    <div class="row" style="margin-bottom:10px">
-      <div class="btn" id="btnModeOwn" style="flex:0 0 auto">按各自認購計</div>
-      <div class="btn ghost" id="btnModeAA" style="flex:0 0 auto">AA 平均分攤</div>
-    </div>
-    <div class="sgrid" id="sumGrid"></div>
-    <div class="row" style="margin-top:12px">
-      <button class="btn primary" id="btnCopy">📋 複製全部資料到剪貼簿</button>
-    </div>
-  </section>
-
-  <!-- 總覽 -->
-  <section class="card">
-    <h2><span class="n">6</span>總覽及檢查</h2>
-    <div class="kpis" id="kpis"></div>
-    <div id="unclaimed"></div>
-    <div id="fruitTotals" style="margin-top:12px"></div>
   </section>
 
 </div>
@@ -518,9 +500,6 @@
     });
     return out;
   }
-  function aaShare(){
-    return state.people.length ? grandTotal() / state.people.length : 0;
-  }
   // 生果清單填嘅「總認購數量（目標）」換算成 個
   function targetPieces(f){
     var q = num(f.totalQty);
@@ -630,7 +609,7 @@
   function refreshUnitOptions(){
     var fid = $('qeFruit').value, f = fruitById(fid), sel = $('qeUnit');
     var cur = sel.value, opts = [];
-    if(f && f.mode === 'box' && prices(f).perBox > 0 && prices(f).priceBox > 0) opts.push(['box','箱']);
+    opts.push(['box','箱']);   // 箱永遠顯示，唔使睇生果有冇設箱價
     opts.push(['piece','個']); opts.push(['chou','抽']); opts.push(['bag','袋']);
     sel.innerHTML = opts.map(function(o){ return '<option value="'+o[0]+'">'+o[1]+'</option>'; }).join('');
     var def = (f && f.mode === 'box') ? 'box' : 'piece';
@@ -700,98 +679,8 @@
       if(lab) lab.textContent = f.name || '未命名';
     });
     renderQuickEntry();
-    renderSummary();
-    renderTotals();
     saveDraft();
   }
-
-  function renderSummary(){
-    var g = $('sumGrid');
-    if(!state.people.length){ g.innerHTML = '<div class="empty">仲未有人。</div>'; return; }
-    var aa = aaShare();
-    g.innerHTML = state.people.map(function(p){
-      var es = personEntries(p.id), lines = [], t = 0;
-      es.forEach(function(e){
-        var f = fruitById(e.fid); if(!f) return;
-        var pr = prices(f), c = entryCalc(e, f);
-        t += c.amount;
-        var unitPrice = c.unitName === '箱' ? money(pr.priceBox)+'/箱' : money(pr.pricePiece)+'/個';
-        var detail = c.unitName === '箱' && pr.perBox > 0 ? '（'+qty(c.pieces)+'個）' : '';
-        lines.push('<li><span>'+esc(f.name || '未命名')+' <span class="q">'+qty(e.qty)+c.unitLabel+detail+' @'+unitPrice+'</span></span><b>'+money(c.amount)+'</b></li>');
-      });
-      var foot = lines.length ? '' : '<div class="foot">冇認購任何生果</div>';
-      var extra = '';
-      if(state.mode === 'aa'){
-        var diff = t - aa;
-        var cls = diff > 0.004 ? 'color:#1f9d55' : (diff < -0.004 ? 'color:#d9480f' : 'color:#8b7a68');
-        extra = '<div class="diff" style="'+cls+'">AA 應付 '+money(aa)+'　' +
-          (Math.abs(diff) < 0.005 ? '✅ 剛好' : (diff>0 ? '拎多咗 '+money(diff) : '拎少咗 '+money(-diff))) + '</div>';
-      }
-      return '<div class="scard">' +
-        '<h3><span>'+esc(p.name || '未命名')+'</span><span class="amt">'+money(state.mode==='aa' ? aa : t)+'</span></h3>' +
-        '<ul>'+lines.join('')+'</ul>' + foot + extra +
-      '</div>';
-    }).join('');
-  }
-
-  function renderTotals(){
-    var gt = grandTotal(), tp = totalPieces();
-    $('kpis').innerHTML =
-      kpi('總金額', money(gt)) +
-      kpi('總數量', qty(tp) + ' 個') +
-      kpi('參與人數', state.people.length + ' 人') +
-      kpi('生果款數', state.fruits.length + ' 款') +
-      kpi('平均每人', money(aaShare()));
-    if(state.fruits.length){
-      var misN = 0;
-      state.fruits.forEach(function(f){ var r = reconcile(f); if(r.set && r.status !== 'ok') misN++; });
-      if(misN) $('kpis').innerHTML += '<div class="kpi" style="border-color:#f6cbb6;background:#ffeee6"><div class="k">對數未符</div><div class="v" style="color:#d9480f">'+misN+' 款</div></div>';
-    }
-    var u = $('unclaimed');
-    if(!state.fruits.length){
-      u.innerHTML = '';
-    }else{
-      var mis = [], unfilled = [];
-      state.fruits.forEach(function(f){
-        var r = reconcile(f), a = fruitAgg(f.id);
-        if(!r.set){ unfilled.push(esc(f.name || '未命名')); }
-        else if(r.status === 'short'){
-          mis.push({name: esc(f.name || '未命名'), msg: (a.pieces <= 0 ? '未有人認購，' : '') + '不足 ' + qty(-r.diff) + ' 個'});
-        }else if(r.status === 'over'){
-          mis.push({name: esc(f.name || '未命名'), msg: '超出 ' + qty(r.diff) + ' 個'});
-        }
-      });
-      if(mis.length){
-        u.innerHTML = '<div class="alert warn">⚠️ 對數未符（'+mis.length+' 款）：<b>' +
-          mis.map(function(m){ return m.name + '（' + m.msg + '）'; }).join('、') + '</b></div>';
-      }else{
-        u.innerHTML = '<div class="alert ok">✅ 所有已填目標嘅生果，認購總和都啱返數。</div>';
-      }
-      if(unfilled.length){
-        u.innerHTML += '<div style="color:var(--muted);font-size:12.5px;margin-top:6px">ℹ️ 未填總認購目標（唔會計對數）：' +
-          unfilled.join('、') + '</div>';
-      }
-    }
-    var ft = $('fruitTotals');
-    if(!state.fruits.length){ ft.innerHTML = ''; return; }
-    var rows = state.fruits.map(function(f){
-      var a = fruitAgg(f.id), p = prices(f), r = reconcile(f);
-      var targetTxt = r.set ? qty(r.target) + ' 個' : '—';
-      var varTxt = r.set
-        ? (r.status === 'ok' ? '<span style="color:#1f9d55">✓ 啱晒</span>'
-           : '<span style="color:#d9480f">' + (r.status === 'short' ? '少 ' : '多 ') + qty(Math.abs(r.diff)) + ' 個</span>')
-        : '<span style="color:var(--muted)">未填目標</span>';
-      return '<div class="row" style="justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.5px">' +
-        '<span style="white-space:nowrap"><b>'+esc(f.name || '未命名')+'</b></span>' +
-        '<span style="color:var(--muted);white-space:nowrap">認購 '+qty(a.pieces)+'個</span>' +
-        '<span style="color:var(--muted);white-space:nowrap">目標 '+targetTxt+'</span>' +
-        '<span style="white-space:nowrap">差額 '+varTxt+'</span>' +
-        '<span style="font-weight:700;color:'+(a.pieces<=0?'#d9480f':'#e05f00')+'">'+money(a.amount)+'</span>' +
-      '</div>';
-    }).join('');
-    ft.innerHTML = '<div style="font-size:13px;color:var(--muted);margin-bottom:4px">各款生果對數（認購總和 vs 目標）</div>' + rows;
-  }
-  function kpi(k,v){ return '<div class="kpi"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
 
   /* ========== 複製到剪貼簿 ========== */
   function buildText(){
@@ -818,7 +707,6 @@
     L.push('');
     L.push('【每人明細】');
     if(!state.people.length) L.push('（未有人）');
-    var aa = aaShare();
     state.people.forEach(function(p){
       L.push('👤 ' + (p.name || '未命名'));
       var t = 0, any = false;
@@ -832,12 +720,7 @@
         L.push('　・' + (f.name||'未命名') + ' ' + qty(e.qty) + c.unitLabel + extra + ' @' + unitPrice + ' = ' + money(c.amount));
       });
       if(!any) L.push('　（冇認購）');
-      if(state.mode === 'aa'){
-        L.push('　實拎：' + money(t) + '　AA 應付：' + money(aa) + '　' +
-          (Math.abs(t-aa) < 0.005 ? '剛好' : (t > aa ? '多咗 ' + money(t-aa) : '少咗 ' + money(aa-t))));
-      }else{
-        L.push('　合計：' + money(t));
-      }
+      L.push('　合計：' + money(t));
       L.push('');
     });
     L.push('【對數檢查】');
@@ -858,7 +741,6 @@
     L.push('總金額：' + money(grandTotal()));
     L.push('總數量：' + qty(totalPieces()) + ' 個');
     L.push('參與人：' + state.people.length + ' 人');
-    if(state.mode === 'aa') L.push('分攤方式：AA 平均，每人 ' + money(aa));
     if(uc.length) L.push('⚠️ 未有人認購：' + uc.map(function(f){ return f.name || '未命名'; }).join('、'));
     return L.join('\n');
   }
@@ -1088,8 +970,6 @@
   function renderAll(){
     $('dateIn').value = state.date || todayStr();
     renderPeople(); renderFruits(); refreshQuickSelects(); renderQuickEntry(); updateAll(); renderRecords(); syncSaveBtn();
-    $('btnModeOwn').className = 'btn' + (state.mode === 'own' ? ' primary' : ' ghost');
-    $('btnModeAA').className  = 'btn' + (state.mode === 'aa'  ? ' primary' : ' ghost');
   }
 
   /* ========== 事件 ========== */
@@ -1223,8 +1103,6 @@
     this.value = '';   // 允許重複載入同一檔
   });
   $('dateIn').addEventListener('input', function(){ state.date = this.value; saveDraft(); });
-  $('btnModeOwn').addEventListener('click', function(){ state.mode='own'; renderAll(); });
-  $('btnModeAA').addEventListener('click', function(){ state.mode='aa'; renderAll(); });
   $('btnReset').addEventListener('click', function(){
     if(!confirm('確定重設？會剷走晒所有參與人、生果清單同認購數量（已儲存嘅紀錄唔會影響）。')) return;
     state = emptyState();
